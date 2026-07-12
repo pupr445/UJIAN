@@ -7,7 +7,8 @@ function navigate(path) {
 }
 
 function currentPath() {
-  return window.location.hash.replace(/^#/, "") || "/";
+  const hash = window.location.hash.replace(/^#/, "") || "/";
+  return hash.split("?")[0]; // buang query string (mis. ?status=selesai) dari path
 }
 
 window.addEventListener("hashchange", router);
