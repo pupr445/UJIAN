@@ -39,10 +39,10 @@ const SoalAPI = {
   // Mengembalikan hanya soal yang boleh dilihat user (RLS menyaring otomatis).
   // total_soal dihitung terpisah agar user tahu berapa banyak yang terkunci.
   async getSoalUntukSubtes(subtesId) {
-    const { count: totalSoal } = await supabaseClient
-      .from("soal")
-      .select("*", { count: "exact", head: true })
-      .eq("subtes_id", subtesId);
+    const { data: totalSoalData } = await supabaseClient.rpc("hitung_total_soal", {
+      p_subtes_id: subtesId,
+    });
+    const totalSoal = totalSoalData ?? 0;
 
     const { data, error } = await supabaseClient
       .from("soal")
