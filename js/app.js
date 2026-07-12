@@ -25,6 +25,10 @@ async function router() {
     if (path.startsWith("/kategori/")) return requireLogin(() => viewKategori(path.split("/")[2]));
     if (path.startsWith("/kuis/")) return requireLogin(() => viewKuis(path.split("/")[2]));
     if (path === "/langganan") return requireLogin(viewLangganan);
+    if (path === "/tryout") return requireLogin(viewTryoutList);
+    if (path.startsWith("/tryout/paket/")) return requireLogin(() => viewTryoutDetail(path.split("/")[3]));
+    if (path.startsWith("/tryout/sesi/")) return requireLogin(() => viewTryoutSesi(path.split("/")[3]));
+    if (path.startsWith("/tryout/hasil/")) return requireLogin(() => viewTryoutHasil(path.split("/")[3]));
     if (path === "/akun") return requireLogin(viewAkun);
     return view404();
   } catch (err) {
@@ -49,6 +53,7 @@ function renderTopnav() {
   if (Auth.isLoggedIn()) {
     nav.innerHTML = `
       ${link("/dashboard", "Bank Soal")}
+      ${link("/tryout", "Tryout")}
       ${link("/langganan", "Langganan")}
       ${link("/akun", "Akun")}
       <button id="btn-logout">Keluar</button>
@@ -366,6 +371,313 @@ async function renderRiwayatTransaksi() {
           <span class="status-badge ${statusClass[t.status] || ""}">${statusLabel[t.status] || t.status}</span>
         </div>
       `).join("")}
+    </div>
+  `;
+}
+
+/* ============================================================
+   TRYOUT — daftar paket
+   ============================================================ */
+async function viewTryoutList() {
+  appEl.innerHTML = `<p>Memuat paket tryout...</p>`;
+  const [paketList, aktif] = await Promise.all([TryoutAPI.getSemuaPaket(), PaymentAPI.getLanggananAktif()]);
+
+  appEl.innerHTML = `
+    <h2>Tryout — Simulasi Ujian Real</h2>
+    <p>Kerjakan soal asli sejumlah ujian sesungguhnya, dengan waktu terbatas dan passing grade resmi. Hasil dan pembahasan lengkap muncul setelah selesai atau waktu habis.</p>
+    ${!aktif ? `<div class="locked-box" style="margin:20px 0;"><h3>Tryout adalah fitur Premium</h3><p>Berlangganan untuk membuka akses tryout lengkap.</p><a href="#/langganan" class="btn">Lihat Paket Langganan</a></div>` : ""}
+    <div class="grid grid-2" style="margin-top:20px;">
+      ${paketList.map((p, i) => {
+        const totalSoal = p.paket_tryout_subtes.reduce((sum, k) => sum + k.jumlah_soal, 0);
+        return `
+        <a href="#/tryout/paket/${p.id}" class="card kategori-card fade-in fade-in-delay-${Math.min(i + 1, 3)}">
+          <div class="kategori-icon">${escapeHtml(p.kategori_ujian?.kode?.slice(0, 2) || "TO")}</div>
+          <p class="kategori-eyebrow">${escapeHtml(p.kategori_ujian?.kode || "")}</p>
+          <h3>${escapeHtml(p.nama)}</h3>
+          <p>${escapeHtml(p.deskripsi || "")}</p>
+          <p class="hint mono">${totalSoal} soal &middot; ${p.durasi_menit} menit</p>
+        </a>
+      `;
+      }).join("") || `<div class="empty-state"><h3>Belum ada paket tryout</h3></div>`}
+    </div>
+  `;
+}
+
+async function viewTryoutDetail(paketId) {
+  appEl.innerHTML = `<p>Memuat detail paket...</p>`;
+  const [paket, aktif, sesiBerlangsung] = await Promise.all([
+    TryoutAPI.getPaketById(paketId),
+    PaymentAPI.getLanggananAktif(),
+    TryoutAPI.getSesiBerlangsung(paketId),
+  ]);
+  const komposisi = [...paket.paket_tryout_subtes].sort((a, b) => a.urutan - b.urutan);
+  const totalSoal = komposisi.reduce((sum, k) => sum + k.jumlah_soal, 0);
+
+  appEl.innerHTML = `
+    <a href="#/tryout" class="hint">&larr; Kembali ke daftar tryout</a>
+    <div class="card fade-in" style="margin-top:16px;">
+      <p class="kategori-eyebrow">${escapeHtml(paket.kategori_ujian?.kode || "")}</p>
+      <h2>${escapeHtml(paket.nama)}</h2>
+      <p>${escapeHtml(paket.deskripsi || "")}</p>
+      <div class="grid grid-3" style="margin:20px 0;">
+        <div><p class="hint">Total Soal</p><h3>${totalSoal}</h3></div>
+        <div><p class="hint">Durasi</p><h3>${paket.durasi_menit} menit</h3></div>
+        <div><p class="hint">Subtes</p><h3>${komposisi.length}</h3></div>
+      </div>
+      <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+        <thead><tr style="text-align:left; border-bottom:1.5px solid var(--line);">
+          <th style="padding:8px 4px;">Subtes</th><th style="padding:8px 4px;">Jumlah Soal</th><th style="padding:8px 4px;">Skor Maks</th><th style="padding:8px 4px;">Passing Grade</th>
+        </tr></thead>
+        <tbody>
+          ${komposisi.map((k) => `
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:8px 4px;"><strong>${escapeHtml(k.subtes.kode)}</strong> — ${escapeHtml(k.subtes.nama)}</td>
+              <td style="padding:8px 4px;">${k.jumlah_soal}</td>
+              <td style="padding:8px 4px;">${k.skor_maks}</td>
+              <td style="padding:8px 4px;">${k.passing_grade != null ? `&ge; ${k.passing_grade}` : "Tidak ada (rangking)"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      ${!aktif
+        ? `<div class="locked-box"><h3>Perlu langganan aktif</h3><p>Upgrade dulu untuk membuka tryout ini.</p><a href="#/langganan" class="btn">Lihat Paket Langganan</a></div>`
+        : sesiBerlangsung
+          ? `<a href="#/tryout/sesi/${sesiBerlangsung.id}" class="btn btn-block">Lanjutkan Tryout yang Sedang Berjalan</a>`
+          : `<button id="btn-mulai-tryout" class="btn btn-block">Mulai Tryout Sekarang</button>`
+      }
+    </div>
+  `;
+
+  const btnMulai = document.getElementById("btn-mulai-tryout");
+  if (btnMulai) {
+    btnMulai.onclick = async () => {
+      btnMulai.disabled = true;
+      btnMulai.textContent = "Menyiapkan soal...";
+      try {
+        const sesi = await TryoutAPI.mulaiSesi(paket);
+        navigate(`/tryout/sesi/${sesi.id}`);
+      } catch (err) {
+        showToast(err.message || "Gagal memulai tryout");
+        btnMulai.disabled = false;
+        btnMulai.textContent = "Mulai Tryout Sekarang";
+      }
+    };
+  }
+}
+
+/* ============================================================
+   TRYOUT — pengerjaan (timer real, navigasi antar soal)
+   ============================================================ */
+let _tryoutTimerHandle = null;
+
+async function viewTryoutSesi(sesiId) {
+  appEl.innerHTML = `<p>Memuat soal tryout...</p>`;
+  if (_tryoutTimerHandle) clearInterval(_tryoutTimerHandle);
+
+  const sesi = await TryoutAPI.getSesi(sesiId);
+  if (sesi.status !== "berlangsung") {
+    navigate(`/tryout/hasil/${sesiId}`);
+    return;
+  }
+  const soalList = await TryoutAPI.getSoalSesi(sesiId);
+  const komposisi = [...sesi.paket_tryout.paket_tryout_subtes].sort((a, b) => a.urutan - b.urutan);
+
+  let index = 0;
+  let sudahSubmit = false;
+
+  function labelSubtes(subtesId) {
+    const k = komposisi.find((x) => x.subtes_id === subtesId);
+    return k ? k.subtes.kode : "";
+  }
+
+  async function submitSesiSekarang(otomatis) {
+    if (sudahSubmit) return;
+    sudahSubmit = true;
+    if (_tryoutTimerHandle) clearInterval(_tryoutTimerHandle);
+    try {
+      await TryoutAPI.submitSesi(sesiId);
+      if (otomatis) showToast("Waktu habis — jawaban otomatis dikumpulkan");
+      navigate(`/tryout/hasil/${sesiId}`);
+    } catch (err) {
+      showToast(err.message || "Gagal mengumpulkan jawaban");
+      sudahSubmit = false;
+    }
+  }
+
+  function render() {
+    const s = soalList[index];
+    const soal = s.soal_tryout_ujian;
+    const dijawabCount = soalList.filter((x) => x.jawaban_user).length;
+
+    appEl.innerHTML = `
+      <div class="card fade-in" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <p class="hint" style="margin:0;">${escapeHtml(sesi.paket_tryout.nama)}</p>
+          <p class="mono" style="margin:0; color:var(--primary); font-weight:700;">${dijawabCount} / ${soalList.length} terjawab</p>
+        </div>
+        <div id="timer-display" class="mono" style="font-size:1.3rem; font-weight:700; color:var(--red);">--:--:--</div>
+        <button id="btn-selesai-ujian" class="btn btn-outline btn-sm">Selesai Ujian</button>
+      </div>
+
+      <div class="card fade-in" style="margin-bottom:16px;">
+        <p class="hint" style="margin-bottom:8px;">Navigasi Soal</p>
+        <div id="qnav-grid" style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${soalList.map((x, i) => `
+            <button class="qnav-btn ${i === index ? "qnav-current" : x.jawaban_user ? "qnav-answered" : ""}" data-index="${i}">${i + 1}</button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="exam-ticket fade-in">
+        <div class="exam-meta">
+          <span>${escapeHtml(labelSubtes(soal.subtes_id))}</span>
+          <span class="mono">Soal ${index + 1} / ${soalList.length}</span>
+        </div>
+        <div class="exam-progress"><div class="exam-progress-bar" style="width:${((index + 1) / soalList.length) * 100}%"></div></div>
+        <p class="pertanyaan">${escapeHtml(soal.pertanyaan)}</p>
+        <div class="pilihan-list" id="pilihan-list">
+          ${soal.pilihan.map((p) => `
+            <div class="pilihan-item ${s.jawaban_user === p.kode ? "selected" : ""}" data-kode="${p.kode}">
+              <span class="pilihan-bubble">${p.kode}</span>
+              <span class="pilihan-teks">${escapeHtml(p.teks)}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:22px;">
+          <button class="btn btn-outline btn-sm" id="btn-prev" ${index === 0 ? "disabled" : ""}>&larr; Sebelumnya</button>
+          <button class="btn btn-sm" id="btn-next" ${index === soalList.length - 1 ? "disabled" : ""}>Berikutnya &rarr;</button>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll(".pilihan-item").forEach((el) => {
+      el.addEventListener("click", async () => {
+        const kode = el.dataset.kode;
+        s.jawaban_user = kode;
+        document.querySelectorAll(".pilihan-item").forEach((it) => it.classList.toggle("selected", it.dataset.kode === kode));
+        document.querySelector(`.qnav-btn[data-index="${index}"]`).classList.add("qnav-answered");
+        try {
+          await TryoutAPI.simpanJawaban(s.id, kode);
+        } catch (err) {
+          showToast("Gagal menyimpan jawaban, coba lagi");
+        }
+      });
+    });
+
+    document.querySelectorAll(".qnav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => { index = Number(btn.dataset.index); render(); });
+    });
+
+    document.getElementById("btn-prev").onclick = () => { index--; render(); };
+    document.getElementById("btn-next").onclick = () => { index++; render(); };
+    document.getElementById("btn-selesai-ujian").onclick = () => {
+      const belumJawab = soalList.length - soalList.filter((x) => x.jawaban_user).length;
+      const pesan = belumJawab > 0
+        ? `Masih ada ${belumJawab} soal belum dijawab. Yakin ingin menyelesaikan ujian sekarang?`
+        : "Yakin ingin menyelesaikan ujian sekarang? Jawaban tidak dapat diubah lagi setelah ini.";
+      if (confirm(pesan)) submitSesiSekarang(false);
+    };
+
+    updateTimerDisplay();
+  }
+
+  function updateTimerDisplay() {
+    const el = document.getElementById("timer-display");
+    if (!el) return;
+    const sisaMs = new Date(sesi.batas_waktu).getTime() - Date.now();
+    if (sisaMs <= 0) {
+      el.textContent = "00:00:00";
+      submitSesiSekarang(true);
+      return;
+    }
+    const totalDetik = Math.floor(sisaMs / 1000);
+    const jam = String(Math.floor(totalDetik / 3600)).padStart(2, "0");
+    const menit = String(Math.floor((totalDetik % 3600) / 60)).padStart(2, "0");
+    const detik = String(totalDetik % 60).padStart(2, "0");
+    el.textContent = `${jam}:${menit}:${detik}`;
+    if (sisaMs < 5 * 60 * 1000) el.style.color = "var(--red)";
+  }
+
+  render();
+  _tryoutTimerHandle = setInterval(updateTimerDisplay, 1000);
+}
+
+/* ============================================================
+   TRYOUT — hasil & pembahasan
+   ============================================================ */
+async function viewTryoutHasil(sesiId) {
+  appEl.innerHTML = `<p>Memuat hasil...</p>`;
+  const sesi = await TryoutAPI.getSesi(sesiId);
+
+  if (sesi.status === "berlangsung") {
+    appEl.innerHTML = `<div class="empty-state"><h3>Sesi ini belum diselesaikan</h3><a href="#/tryout/sesi/${sesiId}" class="btn" style="margin-top:12px;">Lanjutkan Mengerjakan</a></div>`;
+    return;
+  }
+
+  const komposisi = [...sesi.paket_tryout.paket_tryout_subtes].sort((a, b) => a.urutan - b.urutan);
+  const review = await TryoutAPI.getReviewSesi(sesiId);
+
+  const adaPassingGrade = komposisi.some((k) => k.passing_grade != null);
+
+  appEl.innerHTML = `
+    <div class="card fade-in" style="text-align:center; margin-bottom:20px;">
+      <p class="kategori-eyebrow" style="justify-content:center;">Hasil Tryout</p>
+      <h2>${escapeHtml(sesi.paket_tryout.nama)}</h2>
+      <div class="harga" style="color:var(--primary);">${sesi.skor_total ?? 0}</div>
+      ${adaPassingGrade
+        ? `<span class="status-badge ${sesi.lulus ? "status-aktif" : "status-gagal"}" style="font-size:.9rem; padding:8px 18px;">${sesi.lulus ? "MEMENUHI PASSING GRADE" : "BELUM MEMENUHI PASSING GRADE"}</span>`
+        : `<p class="hint">Skor bersifat rangking, tidak ada passing grade tetap.</p>`}
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:28px;">
+      ${komposisi.map((k, i) => {
+        const s = (sesi.skor_per_subtes || {})[k.subtes_id] || { skor: 0, maks: k.skor_maks };
+        return `
+        <div class="card fade-in fade-in-delay-${Math.min(i + 1, 3)}">
+          <p class="hint">${escapeHtml(k.subtes.kode)} — ${escapeHtml(k.subtes.nama)}</p>
+          <h3 style="color:var(--primary);">${s.skor} <span class="hint" style="font-size:.9rem; font-weight:400;">/ ${s.maks}</span></h3>
+          ${k.passing_grade != null ? `<span class="status-badge ${s.skor >= k.passing_grade ? "status-aktif" : "status-gagal"}">${s.skor >= k.passing_grade ? "Lulus" : "Belum lulus"} (min. ${k.passing_grade})</span>` : ""}
+        </div>
+      `;
+      }).join("")}
+    </div>
+
+    <h3>Pembahasan Lengkap</h3>
+    <div id="review-list" style="margin-top:16px;">
+      ${review.map((r, i) => {
+        const soal = r.soal_tryout;
+        const benar = soal.skor_pilihan ? null : r.jawaban_user === soal.jawaban_benar;
+        return `
+        <div class="exam-ticket fade-in" style="margin-bottom:20px;">
+          <div class="exam-meta">
+            <span>${escapeHtml(soal.subtes.kode)}</span>
+            <span class="mono">Soal ${i + 1} &middot; Skor: ${r.skor_didapat ?? 0}</span>
+          </div>
+          <p class="pertanyaan">${escapeHtml(soal.pertanyaan)}</p>
+          <div class="pilihan-list">
+            ${soal.pilihan.map((p) => {
+              let cls = "";
+              if (soal.skor_pilihan) {
+                if (p.kode === r.jawaban_user) cls = "selected";
+              } else {
+                if (p.kode === soal.jawaban_benar) cls = "benar";
+                else if (p.kode === r.jawaban_user) cls = "salah";
+              }
+              return `
+              <div class="pilihan-item ${cls}">
+                <span class="pilihan-bubble">${p.kode}</span>
+                <span class="pilihan-teks">${escapeHtml(p.teks)}${p.kode === r.jawaban_user ? " <em>(jawaban Anda)</em>" : ""}</span>
+              </div>
+            `;
+            }).join("")}
+          </div>
+          <div class="pembahasan-box">
+            <p class="pembahasan-label">Pembahasan</p>
+            <p>${escapeHtml(soal.pembahasan)}</p>
+          </div>
+        </div>
+      `;
+      }).join("")}
     </div>
   `;
 }
