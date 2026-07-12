@@ -1,0 +1,229 @@
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink:        #12213D;   /* teks utama, header */
+  --ink-soft:   #4A5876;   /* teks sekunder */
+  --paper:      #F5F6F3;   /* latar halaman */
+  --paper-card: #FFFFFF;   /* latar kartu */
+  --line:       #DADFE4;   /* garis/border */
+  --gold:       #C8932A;   /* aksen pencapaian/premium */
+  --gold-soft:  #F4E7CC;
+  --teal:       #0E7C6B;   /* benar / sukses */
+  --teal-soft:  #DCF0EA;
+  --red:        #C4402E;   /* salah / error */
+  --red-soft:   #F7DFDA;
+
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(18,33,61,0.06), 0 8px 24px -12px rgba(18,33,61,0.15);
+}
+
+*{ box-sizing: border-box; }
+html{ scroll-behavior: smooth; }
+
+body{
+  margin:0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a{ color: inherit; text-decoration: none; }
+button{ font-family: inherit; cursor: pointer; }
+:focus-visible{ outline: 2px solid var(--ink); outline-offset: 2px; }
+
+h1,h2,h3{ font-family: var(--font-display); font-weight: 600; margin: 0 0 .4em; color: var(--ink); }
+h1{ font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 700; }
+h2{ font-size: 1.5rem; }
+h3{ font-size: 1.15rem; }
+p{ margin: 0 0 1em; color: var(--ink-soft); }
+
+.mono{ font-family: var(--font-mono); }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-card);
+  position: sticky; top:0; z-index: 20;
+}
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand-mark{
+  width:34px; height:34px; border-radius:8px;
+  background: var(--ink); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-mono); font-weight:600; font-size:.8rem;
+}
+.brand-name{ font-family: var(--font-display); font-weight:700; font-size:1.15rem; }
+.brand-dot{ color: var(--gold); }
+
+.topnav{ display:flex; align-items:center; gap: 18px; font-size:.92rem; }
+.topnav a, .topnav button{
+  background:none; border:none; color: var(--ink-soft); font-size: .92rem;
+  padding: 6px 2px; border-bottom: 2px solid transparent;
+}
+.topnav a:hover, .topnav button:hover{ color: var(--ink); }
+.topnav .active{ color: var(--ink); border-color: var(--gold); }
+.btn-nav-cta{
+  background: var(--ink) !important; color:#fff !important;
+  padding: 8px 16px !important; border-radius: 999px !important;
+  border-bottom: none !important;
+}
+
+.app-shell{ max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; min-height: 60vh; }
+.footer{ text-align:center; padding: 28px; color: var(--ink-soft); font-size:.82rem; border-top:1px solid var(--line); }
+
+/* ============================================================
+   COMPONENTS
+   ============================================================ */
+.card{
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.grid{ display:grid; gap: 18px; }
+.grid-2{ grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); }
+.grid-3{ grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); }
+
+.field{ margin-bottom: 16px; }
+.field label{ display:block; font-size:.85rem; font-weight:600; margin-bottom:6px; color: var(--ink); }
+.field input, .field select{
+  width:100%; padding: 11px 13px; border:1px solid var(--line); border-radius: 8px;
+  font-family: inherit; font-size: .95rem; background:#fff; color: var(--ink);
+}
+.field input:focus, .field select:focus{ border-color: var(--ink); }
+.hint{ font-size:.78rem; color: var(--ink-soft); margin-top:4px; }
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding: 11px 22px; border-radius: 999px; border:1px solid var(--ink);
+  background: var(--ink); color:#fff; font-weight:600; font-size:.92rem;
+  transition: transform .12s ease;
+}
+.btn:hover{ transform: translateY(-1px); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+.btn-outline{ background: transparent; color: var(--ink); }
+.btn-block{ width:100%; }
+.btn-sm{ padding: 7px 16px; font-size: .82rem; }
+
+.tag{
+  display:inline-block; font-family: var(--font-mono); font-size:.68rem; font-weight:600;
+  letter-spacing:.03em; text-transform:uppercase; padding: 3px 9px; border-radius: 999px;
+}
+.tag-free{ background: var(--teal-soft); color: var(--teal); }
+.tag-premium{ background: var(--gold-soft); color: var(--gold); }
+
+.toast{
+  position: fixed; bottom: 24px; left:50%; transform: translateX(-50%);
+  background: var(--ink); color:#fff; padding: 12px 20px; border-radius: 999px;
+  font-size:.88rem; box-shadow: var(--shadow); z-index: 100; opacity:0;
+  transition: opacity .25s ease, transform .25s ease;
+}
+.toast.show{ opacity:1; transform: translateX(-50%) translateY(-4px); }
+
+/* ---------- Kategori & subtes list (dashboard) ---------- */
+.kategori-card{ cursor:pointer; transition: border-color .15s ease; }
+.kategori-card:hover{ border-color: var(--ink); }
+.kategori-eyebrow{ font-family: var(--font-mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color: var(--gold); margin-bottom:6px; }
+
+.subtes-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 16px 18px; border:1px solid var(--line); border-radius: 8px; margin-bottom:10px;
+  background: var(--paper-card);
+}
+.subtes-row:hover{ border-color: var(--ink); }
+.subtes-count{ font-family: var(--font-mono); font-size:.78rem; color: var(--ink-soft); }
+
+/* ---------- Kartu soal, gaya "lembar jawaban" ---------- */
+.exam-ticket{
+  position: relative;
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 30px 30px 26px;
+  overflow: visible;
+}
+.exam-ticket::before, .exam-ticket::after{
+  content:""; position:absolute; width:18px; height:18px; border-radius:50%;
+  background: var(--paper); border:1px solid var(--line); top:50%; transform: translateY(-50%);
+}
+.exam-ticket::before{ left:-9px; }
+.exam-ticket::after{ right:-9px; }
+
+.exam-meta{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 18px; font-family: var(--font-mono); font-size:.78rem; color: var(--ink-soft); }
+.exam-progress{ height:4px; background: var(--line); border-radius:2px; overflow:hidden; margin-bottom: 22px; }
+.exam-progress-bar{ height:100%; background: var(--gold); transition: width .3s ease; }
+
+.pertanyaan{ font-size: 1.12rem; color: var(--ink); margin-bottom: 22px; line-height:1.6; }
+
+.pilihan-list{ display:flex; flex-direction:column; gap: 10px; margin-bottom: 20px; }
+.pilihan-item{
+  display:flex; align-items:flex-start; gap: 12px; padding: 13px 16px;
+  border:1px solid var(--line); border-radius: 8px; background:#fff;
+}
+.pilihan-item:hover{ border-color: var(--ink); }
+.pilihan-item.selected{ border-color: var(--ink); background: #F0F1EE; }
+.pilihan-item.benar{ border-color: var(--teal); background: var(--teal-soft); }
+.pilihan-item.salah{ border-color: var(--red); background: var(--red-soft); }
+.pilihan-bubble{
+  flex: 0 0 auto; width:26px; height:26px; border-radius:50%; border:1.5px solid var(--ink-soft);
+  display:flex; align-items:center; justify-content:center; font-family: var(--font-mono); font-size:.78rem; font-weight:600;
+}
+.pilihan-item.selected .pilihan-bubble{ background: var(--ink); color:#fff; border-color: var(--ink); }
+.pilihan-item.benar .pilihan-bubble{ background: var(--teal); color:#fff; border-color: var(--teal); }
+.pilihan-item.salah .pilihan-bubble{ background: var(--red); color:#fff; border-color: var(--red); }
+.pilihan-teks{ padding-top:3px; }
+
+.pembahasan-box{
+  border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 18px;
+}
+.pembahasan-label{ font-family: var(--font-mono); font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color: var(--gold); margin-bottom:8px; }
+
+.locked-box{
+  text-align:center; padding: 40px 20px; border: 1px dashed var(--line); border-radius: var(--radius);
+  background: var(--gold-soft);
+}
+
+/* ---------- Pricing / langganan ---------- */
+.pricing-card{ text-align:center; display:flex; flex-direction:column; }
+.pricing-card .harga{ font-family: var(--font-display); font-size: 2.1rem; font-weight:700; margin: 10px 0; }
+.pricing-card .harga small{ font-family: var(--font-body); font-size: .85rem; color: var(--ink-soft); font-weight:400; }
+.pricing-card.featured{ border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), var(--shadow); }
+.pricing-badge{ align-self:center; margin-bottom: 8px; }
+
+.gateway-choice{ display:flex; gap:10px; margin: 16px 0; }
+.gateway-choice label{
+  flex:1; border:1px solid var(--line); border-radius:8px; padding: 12px; text-align:center;
+  font-size:.85rem; font-weight:600; cursor:pointer;
+}
+.gateway-choice input{ display:none; }
+.gateway-choice input:checked + span{ color: var(--ink); }
+.gateway-choice:has(input:checked) label{ border-color: var(--ink); background:#F0F1EE; }
+
+.status-badge{ font-family: var(--font-mono); font-size:.72rem; padding:3px 9px; border-radius:999px; text-transform:uppercase; }
+.status-aktif{ background: var(--teal-soft); color: var(--teal); }
+.status-pending{ background: var(--gold-soft); color: var(--gold); }
+.status-berakhir, .status-gagal{ background: var(--red-soft); color: var(--red); }
+
+.empty-state{ text-align:center; padding: 60px 20px; color: var(--ink-soft); }
+.empty-state h3{ color: var(--ink); }
+
+@media (max-width: 640px){
+  .topbar{ padding: 14px 16px; }
+  .app-shell{ padding: 28px 16px 60px; }
+  .card{ padding: 20px; }
+  .exam-ticket{ padding: 22px 18px; }
+}

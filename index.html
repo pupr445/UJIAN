@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bank Soal — Persiapan CPNS &amp; UTBK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <a href="#/" class="brand">
+      <span class="brand-mark">BS</span>
+      <span class="brand-name">Bank Soal<span class="brand-dot">.</span></span>
+    </a>
+    <nav class="topnav" id="topnav">
+      <!-- diisi JS sesuai status login -->
+    </nav>
+  </header>
+
+  <main id="app" class="app-shell">
+    <!-- konten halaman dirender di sini oleh js/app.js -->
+  </main>
+
+  <footer class="footer">
+    <p>Bank Soal &amp; Pembahasan — dibuat utk persiapan CPNS &amp; UTBK-SNBT.</p>
+  </footer>
+
+  <template id="tpl-toast"><div class="toast"></div></template>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/soal.js"></script>
+  <script src="js/payment.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
