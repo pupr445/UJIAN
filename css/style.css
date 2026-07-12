@@ -300,6 +300,16 @@ p{ margin: 0 0 1em; color: var(--ink-soft); }
 .empty-state{ text-align:center; padding: 64px 20px; color: var(--ink-soft); }
 .empty-state h3{ color: var(--ink); }
 
+/* ---------- Tryout: navigasi soal & timer ---------- */
+.qnav-btn{
+  width: 38px; height: 38px; border-radius: 8px; border: 1.5px solid var(--line);
+  background: #fff; color: var(--ink-soft); font-family: var(--font-mono); font-weight: 600; font-size: .82rem;
+  transition: all .12s ease;
+}
+.qnav-btn:hover{ border-color: var(--primary); }
+.qnav-btn.qnav-answered{ background: var(--teal-soft); border-color: var(--teal); color: var(--teal); }
+.qnav-btn.qnav-current{ background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 10px -2px rgba(79,70,229,0.5); }
+
 @media (max-width: 640px){
   .topbar{ padding: 14px 16px; }
   .app-shell{ padding: 28px 16px 60px; }
