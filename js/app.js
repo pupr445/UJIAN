@@ -67,22 +67,25 @@ function renderTopnav() {
    ============================================================ */
 function viewBeranda() {
   appEl.innerHTML = `
-    <section style="text-align:center; padding: 40px 0 20px;">
-      <p class="kategori-eyebrow" style="justify-content:center; display:flex;">Bank Soal &amp; Pembahasan</p>
+    <section class="hero fade-in">
+      <p class="kategori-eyebrow">✦ Bank Soal &amp; Pembahasan</p>
       <h1>Siap ujian CPNS &amp; UTBK dengan soal yang benar-benar dibahas.</h1>
-      <p style="max-width:520px; margin:0 auto 24px;">Ratusan soal TWK, TIU, TKP, Penalaran Umum, dan Pengetahuan Umum — lengkap dengan pembahasan langkah demi langkah, bukan cuma kunci jawaban.</p>
-      <a href="#/daftar" class="btn">Mulai Latihan Gratis</a>
+      <p>Ratusan soal TWK, TIU, TKP, Penalaran Umum, dan Pengetahuan Umum — lengkap dengan pembahasan langkah demi langkah, bukan cuma kunci jawaban.</p>
+      <a href="#/daftar" class="btn">Mulai Latihan Gratis →</a>
     </section>
-    <section class="grid grid-3" style="margin-top:48px;">
-      <div class="card">
+    <section class="grid grid-3 feature-strip">
+      <div class="card feature-card fade-in fade-in-delay-1">
+        <div class="icon-badge">📚</div>
         <h3>Soal Terstruktur</h3>
         <p>Dikelompokkan per subtes, sesuai kisi-kisi ujian resmi.</p>
       </div>
-      <div class="card">
+      <div class="card feature-card fade-in fade-in-delay-2">
+        <div class="icon-badge">💡</div>
         <h3>Pembahasan Lengkap</h3>
         <p>Setiap soal disertai alasan kenapa jawaban itu benar — bukan cuma kuncinya.</p>
       </div>
-      <div class="card">
+      <div class="card feature-card fade-in fade-in-delay-3">
+        <div class="icon-badge">🚀</div>
         <h3>Akses Fleksibel</h3>
         <p>Coba soal gratis dulu, upgrade ke premium kapan saja lewat Midtrans atau Xendit.</p>
       </div>
@@ -95,7 +98,7 @@ function viewBeranda() {
    ============================================================ */
 function viewMasuk() {
   appEl.innerHTML = `
-    <div class="card" style="max-width:420px; margin:0 auto;">
+    <div class="card fade-in" style="max-width:420px; margin:0 auto;">
       <h2>Masuk</h2>
       <form id="form-masuk">
         <div class="field"><label>Email</label><input type="email" name="email" required /></div>
@@ -124,7 +127,7 @@ function viewMasuk() {
 
 function viewDaftar() {
   appEl.innerHTML = `
-    <div class="card" style="max-width:420px; margin:0 auto;">
+    <div class="card fade-in" style="max-width:420px; margin:0 auto;">
       <h2>Buat Akun</h2>
       <form id="form-daftar">
         <div class="field"><label>Nama lengkap</label><input type="text" name="nama" required /></div>
@@ -161,8 +164,9 @@ async function viewDashboard() {
   appEl.innerHTML = `
     <h2>Pilih Jenis Ujian</h2>
     <div class="grid grid-2" style="margin-top:18px;">
-      ${kategori.map((k) => `
-        <a href="#/kategori/${k.kode}" class="card kategori-card">
+      ${kategori.map((k, i) => `
+        <a href="#/kategori/${k.kode}" class="card kategori-card fade-in fade-in-delay-${i + 1}">
+          <div class="kategori-icon">${escapeHtml(k.kode.slice(0, 2))}</div>
           <p class="kategori-eyebrow">${escapeHtml(k.kode)}</p>
           <h3>${escapeHtml(k.nama)}</h3>
           <p>${escapeHtml(k.deskripsi || "")}</p>
@@ -181,10 +185,11 @@ async function viewKategori(kode) {
     <h2 style="margin-top:12px;">${escapeHtml(kategori.nama)}</h2>
     <p>${escapeHtml(kategori.deskripsi || "")}</p>
     <div style="margin-top:20px;">
-      ${subtes.map((s) => `
-        <a href="#/kuis/${s.id}" class="subtes-row">
-          <div>
-            <strong>${escapeHtml(s.kode)}</strong> — ${escapeHtml(s.nama)}
+      ${subtes.map((s, i) => `
+        <a href="#/kuis/${s.id}" class="subtes-row fade-in fade-in-delay-${Math.min(i + 1, 3)}">
+          <div class="subtes-row-left">
+            <span class="subtes-dot"></span>
+            <div><strong>${escapeHtml(s.kode)}</strong> — ${escapeHtml(s.nama)}</div>
           </div>
           <span class="subtes-count">${s.soal?.[0]?.count ?? 0} soal &rarr;</span>
         </a>
@@ -225,7 +230,7 @@ async function viewKuis(subtesId) {
 
     appEl.innerHTML = `
       <a href="#/kategori/${subtes.kode === 'PU' || subtes.kode === 'PPU' ? 'UTBK' : 'CPNS'}" class="hint">&larr; Kembali</a>
-      <div class="exam-ticket" style="margin-top:16px;">
+      <div class="exam-ticket fade-in" style="margin-top:16px;">
         <div class="exam-meta">
           <span>${escapeHtml(subtes.nama)}</span>
           <span class="mono">Soal ${index + 1} / ${soal.length}${totalSoal > soal.length ? ` (dari ${totalSoal})` : ""}</span>
@@ -300,7 +305,7 @@ async function viewLangganan() {
 
     <div class="grid grid-3" style="margin-top:8px;">
       ${paket.map((p, i) => `
-        <div class="card pricing-card ${i === 1 ? "featured" : ""}">
+        <div class="card pricing-card fade-in fade-in-delay-${Math.min(i + 1, 3)} ${i === 1 ? "featured" : ""}">
           ${i === 1 ? '<span class="tag tag-premium pricing-badge">Paling Hemat</span>' : ""}
           <h3>${escapeHtml(p.nama)}</h3>
           <div class="harga">${formatRupiah(p.harga)}<br/><small>${p.durasi_hari} hari akses</small></div>
@@ -373,7 +378,7 @@ async function viewAkun() {
   const profil = Auth.currentProfile;
   appEl.innerHTML = `
     <h2>Akun Saya</h2>
-    <div class="card grid grid-2">
+    <div class="card fade-in grid grid-2">
       <div>
         <p class="hint">Nama</p>
         <p style="color:var(--ink); font-weight:600;">${escapeHtml(profil?.nama_lengkap || "-")}</p>
