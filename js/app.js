@@ -26,6 +26,7 @@ async function router() {
     if (path.startsWith("/kuis/")) return requireLogin(() => viewKuis(path.split("/")[2]));
     if (path === "/langganan") return requireLogin(viewLangganan);
     if (path === "/tryout") return requireLogin(viewTryoutList);
+    if (path === "/tryout/bundle") return requireLogin(viewBundleList);
     if (path.startsWith("/tryout/paket/")) return requireLogin(() => viewTryoutDetail(path.split("/")[3]));
     if (path.startsWith("/tryout/sesi/")) return requireLogin(() => viewTryoutSesi(path.split("/")[3]));
     if (path.startsWith("/tryout/hasil/")) return requireLogin(() => viewTryoutHasil(path.split("/")[3]));
@@ -158,6 +159,55 @@ function viewDaftar() {
       btn.disabled = false; btn.textContent = "Daftar";
     }
   });
+}
+
+/* ============================================================
+   IKON — tumpukan tiket tryout dengan pita (dipakai di kartu tryout)
+   ============================================================ */
+function svgTryoutIcon() {
+  return `
+  <svg viewBox="0 0 100 100" width="56" height="56" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+    <defs>
+      <linearGradient id="tix1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--primary-soft)"/>
+        <stop offset="1" stop-color="#ffffff"/>
+      </linearGradient>
+      <linearGradient id="tixRibbon" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#FB923C"/>
+        <stop offset="1" stop-color="var(--accent)"/>
+      </linearGradient>
+    </defs>
+    <!-- tiket belakang -->
+    <g transform="rotate(-14 50 52)">
+      <rect x="21" y="20" width="46" height="60" rx="9" fill="url(#tix1)" stroke="var(--line)" stroke-width="2"/>
+    </g>
+    <!-- tiket tengah -->
+    <g transform="rotate(-3 50 52)">
+      <rect x="24" y="16" width="46" height="60" rx="9" fill="#ffffff" stroke="var(--line)" stroke-width="2"/>
+      <rect x="24" y="16" width="46" height="14" rx="9" fill="var(--primary-soft)"/>
+    </g>
+    <!-- tiket depan -->
+    <g transform="rotate(9 50 52)">
+      <rect x="27" y="12" width="46" height="60" rx="9" fill="#ffffff" stroke="var(--line)" stroke-width="2.4"/>
+      <rect x="27" y="12" width="46" height="15" rx="9" fill="var(--primary)"/>
+      <circle cx="27" cy="42" r="4.5" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+      <circle cx="73" cy="42" r="4.5" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+      <line x1="34" y1="42" x2="66" y2="42" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <rect x="34" y="50" width="30" height="4.5" rx="2.2" fill="var(--line)"/>
+      <rect x="34" y="59" width="22" height="4.5" rx="2.2" fill="var(--line)"/>
+    </g>
+    <!-- pita -->
+    <g transform="rotate(-12 50 58)">
+      <rect x="6" y="49" width="88" height="20" fill="url(#tixRibbon)"/>
+      <polygon points="6,49 6,69 -3,59" fill="#C2650A"/>
+      <polygon points="94,49 94,69 103,59" fill="#C2650A"/>
+      <text x="50" y="63" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="12.5" fill="#ffffff" letter-spacing="1">TRYOUT</text>
+    </g>
+    <!-- percikan -->
+    <circle cx="86" cy="20" r="3.5" fill="var(--teal)"/>
+    <circle cx="14" cy="30" r="2.5" fill="var(--accent)"/>
+    <path d="M79 78 l2.6 5.4 5.4 2.6 -5.4 2.6 -2.6 5.4 -2.6 -5.4 -5.4 -2.6 5.4 -2.6 z" fill="var(--primary)"/>
+  </svg>`;
 }
 
 /* ============================================================
@@ -376,26 +426,36 @@ async function renderRiwayatTransaksi() {
 }
 
 /* ============================================================
-   TRYOUT — daftar paket
+   TRYOUT — daftar paket (produk: bisa dibeli satuan atau lewat langganan)
    ============================================================ */
 async function viewTryoutList() {
   appEl.innerHTML = `<p>Memuat paket tryout...</p>`;
-  const [paketList, aktif] = await Promise.all([TryoutAPI.getSemuaPaket(), PaymentAPI.getLanggananAktif()]);
+  const [paketList, aktif, dimiliki] = await Promise.all([
+    TryoutAPI.getSemuaPaket(),
+    PaymentAPI.getLanggananAktif(),
+    TryoutAPI.getSemuaKepemilikan(),
+  ]);
 
   appEl.innerHTML = `
     <h2>Tryout — Simulasi Ujian Real</h2>
     <p>Kerjakan soal asli sejumlah ujian sesungguhnya, dengan waktu terbatas dan passing grade resmi. Hasil dan pembahasan lengkap muncul setelah selesai atau waktu habis.</p>
-    ${!aktif ? `<div class="locked-box" style="margin:20px 0;"><h3>Tryout adalah fitur Premium</h3><p>Berlangganan untuk membuka akses tryout lengkap.</p><a href="#/langganan" class="btn">Lihat Paket Langganan</a></div>` : ""}
-    <div class="grid grid-2" style="margin-top:20px;">
+    <div style="display:flex; gap:12px; margin: 16px 0 24px;">
+      <a href="#/tryout/bundle" class="btn btn-outline btn-sm">Lihat Paket Bundle (Lebih Hemat)</a>
+    </div>
+    <div class="grid grid-2">
       ${paketList.map((p, i) => {
         const totalSoal = p.paket_tryout_subtes.reduce((sum, k) => sum + k.jumlah_soal, 0);
+        const punya = aktif || dimiliki.includes(p.id);
         return `
         <a href="#/tryout/paket/${p.id}" class="card kategori-card fade-in fade-in-delay-${Math.min(i + 1, 3)}">
-          <div class="kategori-icon">${escapeHtml(p.kategori_ujian?.kode?.slice(0, 2) || "TO")}</div>
-          <p class="kategori-eyebrow">${escapeHtml(p.kategori_ujian?.kode || "")}</p>
+          ${svgTryoutIcon()}
+          <p class="kategori-eyebrow" style="margin-top:10px;">${escapeHtml(p.kategori_ujian?.kode || "")}</p>
           <h3>${escapeHtml(p.nama)}</h3>
           <p>${escapeHtml(p.deskripsi || "")}</p>
           <p class="hint mono">${totalSoal} soal &middot; ${p.durasi_menit} menit</p>
+          ${punya
+            ? `<span class="tag tag-free" style="margin-top:8px;">Sudah Dimiliki</span>`
+            : `<span class="tag tag-premium" style="margin-top:8px;">${formatRupiah(p.harga)}</span>`}
         </a>
       `;
       }).join("") || `<div class="empty-state"><h3>Belum ada paket tryout</h3></div>`}
@@ -403,22 +463,77 @@ async function viewTryoutList() {
   `;
 }
 
+async function viewBundleList() {
+  appEl.innerHTML = `<p>Memuat paket bundle...</p>`;
+  const bundles = await TryoutAPI.getBundleList();
+
+  appEl.innerHTML = `
+    <a href="#/tryout" class="hint">&larr; Kembali ke daftar tryout</a>
+    <h2 style="margin-top:12px;">Bundle Tryout</h2>
+    <p>Beli beberapa paket tryout sekaligus dengan harga lebih hemat dibanding beli satuan.</p>
+    <div class="grid grid-2" style="margin-top:16px;">
+      ${bundles.map((b, i) => `
+        <div class="card pricing-card fade-in fade-in-delay-${Math.min(i + 1, 3)}" style="text-align:left;">
+          ${svgTryoutIcon()}
+          <h3 style="margin-top:10px;">${escapeHtml(b.nama)}</h3>
+          <p>${escapeHtml(b.deskripsi || "")}</p>
+          <ul style="margin:0 0 16px; padding-left:20px; color:var(--ink-soft); font-size:.9rem;">
+            ${b.bundle_tryout_paket.map((it) => `<li>${escapeHtml(it.paket_tryout.nama)}</li>`).join("")}
+          </ul>
+          <div class="harga" style="text-align:left;">${formatRupiah(b.harga)}</div>
+          <form class="form-beli-bundle" data-bundle-id="${b.id}">
+            <div class="gateway-choice">
+              <label><input type="radio" name="gw_bundle_${b.id}" value="midtrans" checked /><span>Midtrans</span></label>
+              <label><input type="radio" name="gw_bundle_${b.id}" value="xendit" /><span>Xendit</span></label>
+            </div>
+            <button class="btn btn-block" type="submit">Beli Bundle</button>
+          </form>
+        </div>
+      `).join("") || `<div class="empty-state"><h3>Belum ada bundle tersedia</h3></div>`}
+    </div>
+  `;
+
+  document.querySelectorAll(".form-beli-bundle").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const bundleId = form.dataset.bundleId;
+      const gateway = new FormData(form).get(`gw_bundle_${bundleId}`);
+      const btn = form.querySelector("button");
+      btn.disabled = true; btn.textContent = "Menyiapkan pembayaran...";
+      try {
+        const { redirect_url } = await TryoutAPI.beliBundle(bundleId, gateway);
+        window.location.href = redirect_url;
+      } catch (err) {
+        showToast(err.message || "Gagal membuat transaksi");
+        btn.disabled = false; btn.textContent = "Beli Bundle";
+      }
+    });
+  });
+}
+
 async function viewTryoutDetail(paketId) {
   appEl.innerHTML = `<p>Memuat detail paket...</p>`;
-  const [paket, aktif, sesiBerlangsung] = await Promise.all([
+  const [paket, aktif, dimiliki, sesiBerlangsung] = await Promise.all([
     TryoutAPI.getPaketById(paketId),
     PaymentAPI.getLanggananAktif(),
+    TryoutAPI.getSemuaKepemilikan(),
     TryoutAPI.getSesiBerlangsung(paketId),
   ]);
   const komposisi = [...paket.paket_tryout_subtes].sort((a, b) => a.urutan - b.urutan);
   const totalSoal = komposisi.reduce((sum, k) => sum + k.jumlah_soal, 0);
+  const punya = !!aktif || dimiliki.includes(paket.id);
 
   appEl.innerHTML = `
     <a href="#/tryout" class="hint">&larr; Kembali ke daftar tryout</a>
     <div class="card fade-in" style="margin-top:16px;">
-      <p class="kategori-eyebrow">${escapeHtml(paket.kategori_ujian?.kode || "")}</p>
-      <h2>${escapeHtml(paket.nama)}</h2>
-      <p>${escapeHtml(paket.deskripsi || "")}</p>
+      <div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
+        ${svgTryoutIcon()}
+        <div style="flex:1; min-width:220px;">
+          <p class="kategori-eyebrow">${escapeHtml(paket.kategori_ujian?.kode || "")}</p>
+          <h2 style="margin-bottom:6px;">${escapeHtml(paket.nama)}</h2>
+          <p>${escapeHtml(paket.deskripsi || "")}</p>
+        </div>
+      </div>
       <div class="grid grid-3" style="margin:20px 0;">
         <div><p class="hint">Total Soal</p><h3>${totalSoal}</h3></div>
         <div><p class="hint">Durasi</p><h3>${paket.durasi_menit} menit</h3></div>
@@ -439,11 +554,25 @@ async function viewTryoutDetail(paketId) {
           `).join("")}
         </tbody>
       </table>
-      ${!aktif
-        ? `<div class="locked-box"><h3>Perlu langganan aktif</h3><p>Upgrade dulu untuk membuka tryout ini.</p><a href="#/langganan" class="btn">Lihat Paket Langganan</a></div>`
-        : sesiBerlangsung
-          ? `<a href="#/tryout/sesi/${sesiBerlangsung.id}" class="btn btn-block">Lanjutkan Tryout yang Sedang Berjalan</a>`
-          : `<button id="btn-mulai-tryout" class="btn btn-block">Mulai Tryout Sekarang</button>`
+
+      ${punya
+        ? (sesiBerlangsung
+            ? `<a href="#/tryout/sesi/${sesiBerlangsung.id}" class="btn btn-block">Lanjutkan Tryout yang Sedang Berjalan</a>`
+            : `<button id="btn-mulai-tryout" class="btn btn-block">Mulai Tryout Sekarang</button>`)
+        : `
+          <div class="card" style="background:var(--primary-soft); border:none;">
+            <p class="hint" style="margin-bottom:2px;">Harga paket ini</p>
+            <div class="harga" style="margin:0 0 14px;">${formatRupiah(paket.harga)}</div>
+            <p class="hint">Sudah punya langganan aktif juga otomatis membuka tryout ini. <a href="#/langganan" style="text-decoration:underline;">Lihat paket langganan</a>.</p>
+            <form id="form-beli-tryout">
+              <div class="gateway-choice">
+                <label><input type="radio" name="gw_tryout" value="midtrans" checked /><span>Midtrans</span></label>
+                <label><input type="radio" name="gw_tryout" value="xendit" /><span>Xendit</span></label>
+              </div>
+              <button class="btn btn-block" type="submit">Beli Tryout Ini</button>
+            </form>
+          </div>
+        `
       }
     </div>
   `;
@@ -462,6 +591,23 @@ async function viewTryoutDetail(paketId) {
         btnMulai.textContent = "Mulai Tryout Sekarang";
       }
     };
+  }
+
+  const formBeli = document.getElementById("form-beli-tryout");
+  if (formBeli) {
+    formBeli.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const gateway = new FormData(formBeli).get("gw_tryout");
+      const btn = formBeli.querySelector("button");
+      btn.disabled = true; btn.textContent = "Menyiapkan pembayaran...";
+      try {
+        const { redirect_url } = await TryoutAPI.beliTryout(paket.id, gateway);
+        window.location.href = redirect_url;
+      } catch (err) {
+        showToast(err.message || "Gagal membuat transaksi");
+        btn.disabled = false; btn.textContent = "Beli Tryout Ini";
+      }
+    });
   }
 }
 
