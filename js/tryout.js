@@ -10,6 +10,34 @@ const TryoutAPI = {
     return data;
   },
 
+  async getSemuaKepemilikan() {
+    if (!Auth.isLoggedIn()) return [];
+    const { data } = await supabaseClient
+      .from("kepemilikan_tryout")
+      .select("paket_tryout_id")
+      .eq("user_id", Auth.currentUser.id);
+    return (data ?? []).map((d) => d.paket_tryout_id);
+  },
+
+  async getBundleList() {
+    const { data, error } = await supabaseClient
+      .from("bundle_tryout")
+      .select("*, bundle_tryout_paket(*, paket_tryout(id, nama, harga, durasi_menit))")
+      .eq("aktif", true);
+    if (error) throw error;
+    return data;
+  },
+
+  // Beli satu paket tryout secara satuan
+  async beliTryout(paketTryoutId, gateway) {
+    return PaymentAPI.buatCheckoutProduk("tryout", paketTryoutId, gateway);
+  },
+
+  // Beli bundle (beberapa paket tryout sekaligus, harga lebih hemat)
+  async beliBundle(bundleId, gateway) {
+    return PaymentAPI.buatCheckoutProduk("bundle", bundleId, gateway);
+  },
+
   async getPaketByKategori(kategoriId) {
     const { data, error } = await supabaseClient
       .from("paket_tryout")
